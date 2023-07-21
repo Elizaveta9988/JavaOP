@@ -1,0 +1,100 @@
+package Ticketoffice.java.contloller.java.jdbc.java;
+
+public abstract class JDBCBaseRepository<T> /*implements GenericRepository<T, Long>*/{ {
+    protected String sqlQueryDeleteById;
+    protected String sqlQueryGetById;
+    protected String sqlQueryGetAll;
+    protected String sqlQueryInsert;
+    protected String sqlQueryUpdateById;
+    protected Connection connection;
+
+    public void update(T item) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sqlQueryUpdateById);
+            prepareUpdateStatement(item, preparedStatement);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void add(T item) {
+        try {
+            PreparedStatement preparedStatement = connection
+                    .prepareStatement(sqlQueryInsert);
+            prepareAddStatement(item, preparedStatement);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected List<T> getAll(Class<T> cls) {
+
+        List<T> items = new ArrayList<>();
+        try {
+
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(sqlQueryGetAll);
+            while (rs.next()) {
+                T item  = cls.newInstance();
+                parse(item, rs);
+                items.add(item);
+            }
+            rs.close();
+            statement.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return items;
+    }
+
+    public void delete(Long id) {
+        try {
+
+            PreparedStatement preparedStatement = connection
+                    .prepareStatement(sqlQueryDeleteById);
+            preparedStatement.setLong(1, id);
+            preparedStatement.executeUpdate();
+
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+   protected T getById(Long id, Class<T> cls) throws Exception {
+
+        T item = cls.newInstance();
+
+        try {
+            PreparedStatement preparedStatement = connection.
+                    prepareStatement(sqlQueryGetById);
+            preparedStatement.setLong(1, id);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            if (rs.next()) {
+                parse(item, rs);
+            }
+            else
+            {
+                throw new Exception(Message.NOT_FIND_ID.getMessage() + id);
+            }
+
+            rs.close();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return item;
+    }
+
+    protected abstract void parse(T item, ResultSet rs) throws Exception;
+    protected abstract void prepareAddStatement(T item, PreparedStatement preparedStatement) throws Exception;
+    protected abstract void prepareUpdateStatement(T item, PreparedStatement preparedStatement) throws Exception;
+}
+}
